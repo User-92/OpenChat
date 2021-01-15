@@ -1,4 +1,4 @@
-import socket, threading
+import socket, threading, json
 
 def get_ip_port(path):
     with open(path, "r") as ipf:
@@ -22,7 +22,8 @@ bufsize = 2048
 HEADER_SIZE = 5
 
 def client_thread(conn,users):
-    send_data("#####################################\nWelcome To OpenChat's Testing Server!\n#####################################\n", conn)
+    #send_data("Server >> Welcome To OpenChat's Testing Server!", conn)
+    username = "UnknownUser"
         
     while True:
         try:
@@ -49,12 +50,18 @@ def client_thread(conn,users):
             data = data[HEADER_SIZE:message_length+HEADER_SIZE]
             
             if data:
-                for user in users:
-                    if user == conn:
-                        send_data("YOU > "+data,user)
-                    else:
-                        send_data("UnknownUser > "+data,user)
-                print(data)
+                update_data = json.loads(data)
+                update_keys = [key for key in update_data.keys()]
+                for update_key in update_keys:
+                    if update_key == "send_message":
+                        for user in users:
+                            if user == conn:
+                                data_send = {"new_message":f"YOU > {update_data[update_key]}"}
+                            else:
+                                data_send = {"new_message":f"{username} >> {update_data[update_key]}"}
+                            send_data(json.dumps(data_send), user)
+                    if update_key == "username_update":
+                        username = update_data[update_key]
                 
         except Exception as e:
             print(e)
